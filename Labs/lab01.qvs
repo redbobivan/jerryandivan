@@ -1,0 +1,72 @@
+//Qlik View Script
+
+/*
+The script is used to deal with missing dimensions in a fact table.
+
+@param 1: dTableName: the name of the dimension table
+@param 2: fTableName: the name of the fact table
+@param 3: keyColumn: the key column in the fact table
+@param 4: dMissingColumns: the columns in the dimension table that are missing in the fact table
+@param 5: vMissing: the value to be used for the missing dimension values
+
+@syntax Call DealWithMissingDimTable('Dimension', 'Fact', 'CustomerID', 'Dimension.Customer,Dimension.Country', 'Unknow');
+*/
+
+parameters:
+    dTableName: the name of the dimension table
+    fTableName: the name of the fact table
+    keyColumn: the key column in the fact table
+    dMissingColumns: the columns in the dimension table that are missing in the fact table
+    vMissing: the value to be used for the missing dimension values
+*/
+
+Sub DealWithMissingDimTable(dTableName, fTableName, keyColumn, dMissingColumns, vMissing)
+    
+    unqualify *;
+    NullAsValue $(dMissingColumns);
+    Set NullValue = $(vMissing);
+	Concatenate ($(dTableName))
+  	Load Distinct
+      %$(keyColumn),
+      %$(keyColumn) As $(dTableName).$(keyColumn)
+  	Resident
+		$(fTableName)
+  	Where Len(Lookup(%$(keyColumn), %$(keyColumn), %$(keyColumn), '$(dTableName)'))=0;
+    
+    Qualify *;
+	Unqualify '%*';
+    
+End Sub
+
+//Example
+Qualify *;
+Unqualify '%*';
+
+Dimension:
+Load *, CustomerID as '%CustomerID' Inline [
+CustomerID, Customer, Country
+1, Customer A, USA
+2, Customer B, USA
+3, Customer C, UK
+4, Customer D, UK
+];
+
+
+Fact:
+Load *, CustomerID as '%CustomerID' Inline [
+Date, CustomerID, Sales Value
+2014-01-01, 1, 100
+2014-01-01, 2, 100
+2014-01-01, 3, 100
+2014-01-01, 4, 100
+2014-01-01, 5, 100
+2014-01-02, 1, 100
+2014-01-02, 2, 100
+2014-01-02, 4, 100
+2014-01-03, 5, 300
+];
+
+//Dealing with missing or late arriving dimension values
+Call DealWithMissingDimTable('Dimension', 'Fact', 'CustomerID', 'Dimension.Customer,Dimension.Country', 'Unknow');
+
+Exit Script;
