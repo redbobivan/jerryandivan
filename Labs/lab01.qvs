@@ -6,32 +6,42 @@ The script is used to deal with missing dimensions in a fact table.
 @param 1: dTableName: the name of the dimension table
 @param 2: fTableName: the name of the fact table
 @param 3: keyColumn: the key column in the fact table
-@param 4: dMissingColumns: the columns in the dimension table that are missing in the fact table
-@param 5: vMissing: the value to be used for the missing dimension values
+@param 4: dimKeyColumn: the key column in the dimension table
+@param 5: dColumnsNeedMissingLabel: the columns in the dimension table that need to be filled with missing label
+@param 6: vMissinglabelPrefix: the prefix of the missing label
 
-@syntax Call DealWithMissingDimTable('Dimension', 'Fact', 'CustomerID', 'Dimension.Customer,Dimension.Country', 'Unknow');
+@syntax Call DealWithMissingDimTable('Dimension', 'Fact', '%CustomerID', 'Customer_ID', 'Dimension.Customer,Dimension.Country', 'Unknow');
 */
 
-parameters:
-    dTableName: the name of the dimension table
-    fTableName: the name of the fact table
-    keyColumn: the key column in the fact table
-    dMissingColumns: the columns in the dimension table that are missing in the fact table
-    vMissing: the value to be used for the missing dimension values
-*/
-
-Sub DealWithMissingDimTable(dTableName, fTableName, keyColumn, dMissingColumns, vMissing)
+Sub DealWithMissingDimTable(dTableName, fTableName, keyColumn, dimKeyColumn, dColumnsNeedMissingLabel, vMissinglabelPrefix)
     
     unqualify *;
-    NullAsValue $(dMissingColumns);
-    Set NullValue = $(vMissing);
+    NullAsValue $(dColumnsNeedMissingLabel);
+    Set NullValue = $(vMissinglabelPrefix);
+    
+    tmp_MissingColumns:
+    Load subfield('$(dColumnsNeedMissingLabel)',',')as MissingColumn
+	AutoGenerate(1);
+    
+    Set wMissingColumnStatement =;
+    Let NumRows = NoOfRows('tmp_MissingColumns');
+    For i=0 to $(NumRows) -1
+    	Let wMissingColumn=Peek('MissingColumn',$(i));
+        wMissingColumnStatement = wMissingColumnStatement&' ''$(vMissinglabelPrefix) for $(keyColumn) '' & $(keyColumn) as $(wMissingColumn),';
+    Next;
+    wMissingColumnStatement = Left(wMissingColumnStatement, Len(wMissingColumnStatement) - 1)
+    Trace -->$(wMissingColumnStatement);
+    
 	Concatenate ($(dTableName))
   	Load Distinct
-      %$(keyColumn),
-      %$(keyColumn) As $(dTableName).$(keyColumn)
+      $(keyColumn),
+      $(keyColumn) As $(dTableName).$(dimKeyColumn),
+      $(wMissingColumnStatement),
+      'True' as QaFlag
+      
   	Resident
 		$(fTableName)
-  	Where Len(Lookup(%$(keyColumn), %$(keyColumn), %$(keyColumn), '$(dTableName)'))=0;
+  	Where Len(Lookup('$(keyColumn)', '$(keyColumn)', $(keyColumn), '$(dTableName)'))=0;
     
     Qualify *;
 	Unqualify '%*';
@@ -67,6 +77,6 @@ Date, CustomerID, Sales Value
 ];
 
 //Dealing with missing or late arriving dimension values
-Call DealWithMissingDimTable('Dimension', 'Fact', 'CustomerID', 'Dimension.Customer,Dimension.Country', 'Unknow');
+Call DealWithMissingDimTable('Dimension', 'Fact', '%CustomerID', 'Customer_ID', 'Dimension.Customer,Dimension.Country', 'Unknow');
 
 Exit Script;
