@@ -19,6 +19,7 @@ Sub DealWithMissingDimTable(dTableName, fTableName, keyColumn, dimKeyColumn, dCo
     NullAsValue $(dColumnsNeedMissingLabel);
     Set NullValue = $(vMissinglabelPrefix);
     
+    //Get the columns that need to be filled with missing label
     tmp_MissingColumns:
     Load subfield('$(dColumnsNeedMissingLabel)',',')as MissingColumn
 	AutoGenerate(1);
@@ -32,17 +33,27 @@ Sub DealWithMissingDimTable(dTableName, fTableName, keyColumn, dimKeyColumn, dCo
     wMissingColumnStatement = Left(wMissingColumnStatement, Len(wMissingColumnStatement) - 1)
     Trace -->$(wMissingColumnStatement);
     
+    //deal with missing dimension values
 	Concatenate ($(dTableName))
   	Load Distinct
       $(keyColumn),
       $(keyColumn) As $(dTableName).$(dimKeyColumn),
       $(wMissingColumnStatement),
-      'True' as QaFlag
+      'Fixed' as QaFlag
       
   	Resident
 		$(fTableName)
   	Where Len(Lookup('$(keyColumn)', '$(keyColumn)', $(keyColumn), '$(dTableName)'))=0;
-    
+
+    //Deal with missing dimension values for QaFlag is null
+    temp_Dimention:
+    Load *, If(IsNull(QaFlag), 'Normoal', QaFlag) as tempQaFlag
+    Resident $(dTableName);
+    Drop Fields QaFlag;
+    Rename Fields tempQaFlag to QaFlag;
+    Drop Table $(dTableName);
+    Rename Table temp_Dimention to $(dTableName);
+
     Qualify *;
 	Unqualify '%*';
     
