@@ -1,0 +1,52 @@
+Country:
+Load * Inline
+[
+  Country, Capital
+  China, Bejing
+  Canada,Ottawa
+  Japan,Tokyo
+];
+
+Sales:
+Load * Inline 
+[
+  Country, Sales
+  China, 100
+  USA, 200
+  <No Data>,400
+  Hong Kong, 500
+];
+
+
+Student:
+Load * Inline
+[
+	StudentName, SID
+    Jerry, 0001
+    Kevin, 0002
+    Linda, 0003
+];
+
+
+Scores:
+Load * Inline
+[
+	SID, Socre
+    0001, 90
+    0003,80
+    0005, 30
+    0007,100
+];
+
+Call QSC.DQ.Model.MaintainCoverage('Country','Country', 'Sales', '_');
+//exit script;
+Call QSC.DQ.Model.SupplementMasterTableAgainstDetailTable('Country','Country', 'Country,Sales', '*','CountryAlias','MissingPrefix', 'HereNoType');
+Trace ---> DQ.Test is done!!!!;
+
+//Call QSC.DQ.Utility.FillTableNullWithNullValue('Student','jerr-no-value')
+
+//Call QSC.DQ.Model.MaintainCoverage('SID','Student', 'Scores', '_');
+//Call QSC.DQ.Model.SupplementMasterTableAgainstDetailTable('Student','SID', 'Student,Scores', '*','Stu','', '');
+
+
+Exit Script;

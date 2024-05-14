@@ -1,0 +1,13 @@
+////Qlik View Script
+
+//create a Subroutine to Deal with the duplicate records in the table
+
+Sub RemoveDuplicates(Table)
+    //Create a new table to store the unique records
+    NewTable:
+    Load * Resident [$(Table)] Where Not Exists([$(Table)], [ID]);
+    //Drop the original table
+    Drop Table [$(Table)];
+    //Rename the new table to the original table name
+    Rename Table NewTable To [$(Table)];
+End Sub

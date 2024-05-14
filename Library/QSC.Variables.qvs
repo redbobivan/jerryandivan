@@ -1,0 +1,10 @@
+
+//Variables for QUnit
+Set QSC_Label_Original = Original;
+Set QSC_Label_Maked_Up = Maked Up;
+Set QSC_Label_Missing_Prefix= No dim info for the key;
+Set QSC_Label_For_NA= <No Data>;
+Set QSC_Label_For_No_Key= No Key;
+Set QSC_Color_For_Fail= rgb(255, e, 0);
+Set QSC_Color_For_Pass = rgb(0, 128, 0) ;
+Let QSC_Test_Case_No=0;

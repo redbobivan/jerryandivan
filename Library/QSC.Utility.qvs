@@ -1,0 +1,21 @@
+//Get the list of fields(Columns) in a table and load it to another table
+Sub QSC.Utility.GetTableFieldListToTable(p_Table,p_TargetTable,p_FieldName)
+
+  FOR i = 1 To NoOfFields('$(p_Table)')
+  $(p_TargetTable):
+  LOAD
+  FieldName($(i),'$(p_Table)') as $(p_FieldName)
+  AutoGenerate(1);
+  
+  NEXT i;
+
+End Sub
+
+//Get Delimited String and load it to a table
+Sub QSC.Utility.GetDelimitedStringToTable(p_DelimitedString, p_TargetTable, p_FieldName)
+  $(p_TargetTable):
+  LOAD
+  SubField('$(p_DelimitedString)',',') as $(p_FieldName)
+  AutoGenerate(1);
+End Sub
+ 

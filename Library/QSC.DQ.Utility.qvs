@@ -1,0 +1,15 @@
+/*
+the script is used to fill values in a table with Null values
+@p_TableName: the name of the table
+@p_NullValue: the value to fill the null values with
+*/
+Sub QSC.DQ.Utility.FillTableNullWithNullValue(p_TableName, p_NullValue)
+	NullAsValue *;
+    Let NullValue = '$(p_NullValue)';
+    NoConcatenate
+    $(p_TableName)_Tmp:
+    Load * Resident $(p_TableName);
+    Drop Table $(p_TableName);
+    Rename Table $(p_TableName)_Tmp to $(p_TableName);
+End Sub
+ 

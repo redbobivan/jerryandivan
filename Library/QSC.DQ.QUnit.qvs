@@ -1,0 +1,139 @@
+//For QUnit
+
+Test_Scenario:
+Load * inline 
+[
+  %test_scenario,table_count,key_count,test_scope,test_has_helper
+  test table key uniqueness,1,1,Table_Field_Cross_Rows,No
+  test table field1 belongs to field2,1,2,Table_Fields_Cross_Rows,Yes
+  test table field value meet condtion,1,1,Table_Field_Level,No
+  test table1 field1 can be found in table2 field2,2,2,Cross_Table,No
+];
+
+Test_scenario_2_table_count:
+Mapping Load 
+  %test_scenario,table_count
+  Resident Test_Scenario;
+
+Test_scenario_2_key_count:
+Mapping Load 
+  %test_scenario,key_count
+  Resident Test_Scenario;
+  
+Test_scenario_2_test_scope:
+Mapping Load 
+  %test_scenario,test_scope
+  Resident Test_Scenario; 
+  
+Test_scenario_2_test_has_helper:
+Mapping Load 
+  %test_scenario,test_has_helper
+  Resident Test_Scenario;   
+
+
+Sub QSC.QUnit.Get_Test_Case_Information(p_Test_Case_No)
+
+End Sub
+
+Sub QSC.DQ.QUnit.RegisterTestCase(p_Test_Case_No, p_Test_Case_Scenario, p_Test_Case_Table_1, p_Test_Case_Key_1, p_Test_Case_Table_2, p_Test_Case_Key_2, p_Condition)
+Test_Case:
+Load $(p_Test_Case_No) As %test_case_no
+   , '$(p_Test_Case_Scenario)' As %test_scenario
+   ,'$(p_Test_Case_Table_1)' As test_case.table_1
+   ,'$(p_Test_Case_Key_1)' As test_case.key1
+   ,'$(p_Test_Case_Table_2)' As test_case.table_2
+   ,'$(p_Test_Case_Key_2)' As test_case.key2
+   , applymap('Test_scenario_2_test_scope','$(p_Test_Case_Scenario)') As test_case.scope
+   , applymap('Test_scenario_2_table_count','$(p_Test_Case_Scenario)') As test_case.table_count
+   , applymap('Test_scenario_2_key_count','$(p_Test_Case_Scenario)') As test_case.key_count
+   , applymap('Test_scenario_2_test_has_helper','$(p_Test_Case_Scenario)') As test_case.test_has_helper
+   ,'$(p_Condition)' as test_case.condition
+AutoGenerate(1);
+
+End Sub
+
+
+Sub QSC.DQ.QUnit.ProcessTestCaseHelper(p_Test_Case_No, p_Test_Case_Scenario, p_Test_Case_Table_1, p_Test_Case_Key_1, p_Test_Case_Table_2, p_Test_Case_Key_2, p_Condition)
+  If Lookup('test_has_helper','%test_scenario',p_Test_Case_Scenario,'Test_Scenario')='No' then
+  ElseIf p_Test_Case_Scenario='test table field1 belongs to field2' then 
+     test_case_helper:
+      Load Distinct $(p_Test_Case_No) as %test_case_no,
+         [$(p_Test_Case_Key_1)] as test_case_helper.key1,
+         [$(p_Test_Case_Key_2)] as test_case_helper.key2
+      Resident [$(p_Test_Case_Table_1)];
+
+  End If
+End Sub 
+
+
+
+Sub QSC.DQ.QUnit.ProcessTestCaseSummary(p_Test_Case_No, p_Test_Case_Scenario, p_Test_Case_Table_1, p_Test_Case_Key_1, p_Test_Case_Table_2, p_Test_Case_Key_2, p_Condition)
+  If p_Test_Case_Scenario='test table key uniqueness' Then 
+      Test_Case_Summary:
+      Load $(p_Test_Case_No) As %test_case_no,
+            [$(p_Test_Case_Key_1)] As Test_Case_Summary.key1,
+           If(count(1)>1,'Fail','Pass') As Test_Case_Summary.result,
+           Null() as Test_Case_Summary.key2
+         Resident [$(p_Test_Case_Table_1)] Group By [$(p_Test_Case_Key_1)];
+   ElseIf p_Test_Case_Scenario='test table field1 belongs to field2' Then  
+      Test_Case_Summary:
+      Load $(p_Test_Case_No) as %test_case_no,
+            test_case_helper.key1 as Test_Case_Summary.key1,
+           If(Count(1)>1,'Fail','Pass') as Test_Case_Summary.result,
+           Null() as Test_Case_Summary.key2
+         Resident test_case_helper
+         Where %test_case_no=$(p_Test_Case_No)
+         Group by test_case_helper.key1;
+   ElseIf p_Test_Case_Scenario='test table field value meet condtion' then  
+      Test_Case_Summary:
+      Load $(p_Test_Case_No) as %test_case_no,
+            [$(p_Test_Case_Key_1)] as Test_Case_Summary.key1,
+           If($(p_Condition),'Pass','Fail') as Test_Case_Summary.result,
+           Null() as Test_Case_Summary.key2
+         Resident [$(p_Test_Case_Table_1)];
+   ElseIf p_Test_Case_Scenario='test table1 field1 can be found in table2 field2' then    
+      Concatenate(Test_Case_Summary)
+      Load Distinct $(p_Test_Case_No) as %test_case_no,
+         [$(p_Test_Case_Key_1)] as Test_Case_Summary.key1,
+         If(len(lookup('$(p_Test_Case_Key_2)','$(p_Test_Case_Key_2)',[$(p_Test_Case_Key_1)],'$(p_Test_Case_Table_2)'))>0,'Pass','Fail') as Test_Case_Summary.result,
+         Lookup('$(p_Test_Case_Key_2)','$(p_Test_Case_Key_2)',[$(p_Test_Case_Key_1)],'$(p_Test_Case_Table_2)') as debug,
+         //'[$(p_Test_Case_Key_2)]'&'[$(p_Test_Case_Key_2)]'&'[$(p_Test_Case_Key_1)]'&'$(p_Test_Case_Table_2)' as debug,
+         Null() as Test_Case_Summary.key2
+      Resident [$(p_Test_Case_Table_1)];          
+     
+   End if
+
+End Sub 
+
+Sub QSC.DQ.QUnit.ProcessTestSummary(p_Test_Case_No, p_Test_Case_Scenario, p_Test_Case_Table_1, p_Test_Case_Key_1, p_Test_Case_Table_2, p_Test_Case_Key_2, p_Condition)
+//  if p_Test_Case_Scenario='test table key uniqueness' or pTest_Case_Scenario='test table field1 belongs to field2' then 
+      Test_Summary:
+      Load *, if(Test_Summary.result_fail_count>0,'Fail','Pass') as Test_Summary.result;
+      Load $(p_Test_Case_No) as %test_case_no,
+      	Sum(if(Test_Case_Summary.result='Pass',1,0)) as Test_Summary.result_pass_count,
+      	Sum(if(Test_Case_Summary.result='Fail',1,0)) as Test_Summary.result_fail_count
+      Resident Test_Case_Summary where %test_case_no=$(p_Test_Case_No);
+//   end if
+
+End Sub 
+
+
+Sub QSC.DQ.QUnit.ProcessTestCase(p_Test_Case_Scenario,p_Test_Case_Table_1,p_Test_Case_Key_1,p_Test_Case_Table_2,p_Test_Case_Key_2,pCondition)
+  Unqualify *;
+  Let QSC_Test_Case_No=QSC_Test_Case_No+1;
+  Let p_Test_Case_No=QSC_Test_Case_No;
+  Call QSC.DQ.QUnit.RegisterTestCase(p_Test_Case_No,p_Test_Case_Scenario,p_Test_Case_Table_1,p_Test_Case_Key_1,p_Test_Case_Table_2,p_Test_Case_Key_2,pCondition);
+  Call QSC.DQ.QUnit.ProcessTestCaseHelper(p_Test_Case_No,p_Test_Case_Scenario,p_Test_Case_Table_1,p_Test_Case_Key_1,p_Test_Case_Table_2,p_Test_Case_Key_2,pCondition);
+  Call QSC.DQ.QUnit.ProcessTestCaseSummary(p_Test_Case_No,p_Test_Case_Scenario,p_Test_Case_Table_1,p_Test_Case_Key_1,p_Test_Case_Table_2,p_Test_Case_Key_2,pCondition);
+  Call QSC.DQ.QUnit.ProcessTestSummary(p_Test_Case_No,p_Test_Case_Scenario,p_Test_Case_Table_1,p_Test_Case_Key_1,p_Test_Case_Table_2,p_Test_Case_Key_2,pCondition);
+  
+End Sub
+
+
+//Test Suite
+Sub QSC.DQ.QUnit.ProcessTestSuite(p_Test_Case_Suite,p_Test_Case_Table_1,p_Test_Case_Key_1,p_Test_Case_Table_2,p_Test_Case_Key_2,pCondition)
+  If p_Test_Case_Suite='test table key uniqueness and no blank' then 
+  Call QSC.DQ.QUnit.ProcessTestCase('test table key uniqueness',p_Test_Case_Table_1,p_Test_Case_Key_1,'','');
+  Call QSC.DQ.QUnit.ProcessTestCase('test table field value meet condtion',p_Test_Case_Table_1,p_Test_Case_Key_1,'',p_Test_Case_Key_1,'[$(p_Test_Case_Key_1)]<>''$(QSC_NA_Label)''');
+  End If
+End sub
