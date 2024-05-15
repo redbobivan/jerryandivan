@@ -17,7 +17,6 @@ Consequence:
         $(p_KeyField),
         $(p_Table1)_Flag,
         $(p_Table2)_Flag
-  
 */
 
 Sub QSC.DQ.Model.MaintainCoverage(p_KeyField, p_Table1, p_Table2, p_Connector)
@@ -125,6 +124,7 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField
     //       if(sum(DQ_<p_MainTable>.TableA_Flag)>0,1,0) as DQ_<p_MainTable>.TableA_Flag,
     //       if(sum(DQ_<p_MainTable>.TableB_Flag)>0,1,0) as DQ_<p_MainTable>.TableB_Flag
     
+    //??
     Let v_Agg_Table_Load_Statement = v_Agg_Table_Load_Statement 
                                       & chr(13) 
                                       & v_Table_Prefix
@@ -134,8 +134,8 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField
                                       & 'Load Distinct $(p_KeyField),1 as $(v_Table_List_Base).$(v_TName)_Flag Resident $(v_TName);';
   NEXT;
   
-  //Section 2: Load the main table (DQ dimension table)
-	// Part 3: base staging table load to get the flag fields 
+  //Section 2: Load the main table and DQ dimension table
+	//base staging table load to get the flag fields 
 	SET NullValue = '0';
 	NullAsValue $(v_Flag_Field_List);
     
@@ -144,20 +144,16 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField
   
 	NullAsNull *;
   
-  // Part 4: Aggregation processing
+  //Aggregation processing
 	$(v_Table_List_Base)_TEMP:
     NoConcatenate
     Load $(p_KeyField),$(v_Agg_Flag_Field_List) Resident $(v_Table_List_Base) group by $(p_KeyField);
   
   Drop Table $(v_Table_List_Base);
-  
-  // Part 5: Mount
   Rename Table $(v_Table_List_Base)_TEMP to $(v_Table_List_Base);
-  
-  // Part 6: Cleanup
   Drop Table T_List;
   
-  // Part 7: prepare the key field alias clause
+  // Prepare the key field alias clause
   If Len(p_KeyAliasField)>0 then 
     Set v_Key= ,$(p_KeyField) as [$(p_KeyAliasField)];
   Else 
@@ -206,24 +202,22 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField
   End If
 
   //Deal with missing dimension values for DQ_Record_Type is null
-  // Part 8: make up the Late arriving records or Orphan records and put No correspondent Info to the attributes 
+  //Make up the Late arriving records or Orphan records and put No correspondent Info to the attributes 
   SET NullValue = 'No correspondent info';
   Concatenate($(p_MainTable))
     Load $(p_KeyField) $(v_Key), $(v_MissingColumnStatement),'$(QSC_Label_Maked_Up)' as DQ_Record_Type Resident $(v_Table_List_Base) Where $(v_Table_List_Base).$(p_MainTable)_Flag =0 and not IsNull( $(p_KeyField)) and $(p_KeyField)<>'$(QSC_Label_For_NA)';
  
-  //CALL DQ.Utility.FillTableNullWithNullValue(p_MainTable, 'No correspondent info');
- 
-  // Part 9: make up the Attributes for scenario where key itself is NULL
+  //Make up the Attributes for scenario where key itself is NULL
   SET NullValue = 'No key info';
   Concatenate($(p_MainTable))
     Load $(p_KeyField) $(v_Key), $(v_NoKeyColumnStatement),'$(p_NoKeyLabel)' as DQ_Record_Type Resident $(v_Table_List_Base) Where $(v_Table_List_Base).$(p_MainTable)_Flag =0 and $(p_KeyField)='$(QSC_Label_For_NA)';
 
   Temp_Dimention:
-    Load *, If(IsNull(DQ_Record_Type), '$(QSC_Label_Original)', DQ_Record_Type) as tempDQ_Record_Type
+    Load *, If(IsNull(DQ_Record_Type), '$(QSC_Label_Original)', DQ_Record_Type) as TempDQ_Record_Type
     Resident $(p_MainTable);
 
   Drop Fields DQ_Record_Type;
-  Rename Fields tempDQ_Record_Type to DQ_Record_Type;
+  Rename Fields TempDQ_Record_Type to DQ_Record_Type;
 
   Drop Table $(p_MainTable);
   Rename Table Temp_Dimention to $(p_MainTable);
