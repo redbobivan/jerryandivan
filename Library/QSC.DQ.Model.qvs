@@ -69,9 +69,16 @@ Consequence:
         $(Table2)_Flag
 */
 
-Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField, p_TableList, p_CoreFields, p_KeyAliasField, p_MissinglabelPrefix, p_NoKeyLabel)
+Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(
+    p_MainTable,
+    p_KeyField,
+    p_TableList,
+    p_CoreFields,
+    p_KeyAliasField,
+    p_MissinglabelPrefix,
+    p_NoKeyLabel)
 
-    // Part 1: Initialization
+    // Initialization
     Unqualify *;
     Set v_Table_List_Base = 'DQ_' & p_MainTable;
     Set v_Table_List_Base_First = 1;
@@ -84,11 +91,11 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField
     Call QSC.Utility.GetDelimitedStringToTable(p_TableList, 'T_List', 'Tables');
     Let NumRows = NoOfRows('T_List');
     
-    // Part 2: Preparation
+    // Preparation
     For i = 0 To $(NumRows) - 1
         Let v_TName = Peek('Tables', $(i), 'T_List');
         
-        If v_Table_List_Base_First = 1 Then
+        If v_Table_List_Base_First = 1
             Set v_Table_Prefix = ;
             Set v_Table_PostFix = :;
             Set v_FlagConnector = ;
@@ -97,21 +104,38 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField
             Set v_Table_PostFix = );
             Set v_FlagConnector = ,;
         End If
-
+        
         Let v_Table_List_Base_First = 0;
         
         // Construct the load statement for basic flag from each table
-        Let v_Table_Load_Statement = v_Table_Load_Statement & chr(13) & v_Table_Prefix & v_Table_List_Base & v_Table_PostFix & chr(13) & 'load distinct $(p_KeyField),1 as $(v_Table_List_Base).$(v_TName)_Flag Resident $(v_TName);';
+        Let v_Table_Load_Statement = v_Table_Load_Statement &
+            chr(13) &
+            v_Table_Prefix &
+            v_Table_List_Base &
+            v_Table_PostFix &
+            chr(13) &
+            'load distinct $(p_KeyField), 1 as $(v_Table_List_Base).$(v_TName)_Flag Resident $(v_TName);';
         
         // Maintain the Flag Field Lists
-        Let v_Flag_Field_List = v_Flag_Field_List & v_FlagConnector & '$(v_Table_List_Base).$(v_TName)_Flag';
-        Let v_Agg_Flag_Field_List = v_Agg_Flag_Field_List & v_FlagConnector & 'if(sum($(v_Table_List_Base).$(v_TName)_Flag)>0,1,0) as $(v_Table_List_Base).$(v_TName)_Flag';
+        Let v_Flag_Field_List = v_Flag_Field_List &
+            v_FlagConnector &
+            '$(v_Table_List_Base).$(v_TName)_Flag';
+        
+        Let v_Agg_Flag_Field_List = v_Agg_Flag_Field_List &
+            v_FlagConnector &
+            'if(sum($(v_Table_List_Base).$(v_TName)_Flag) > 0, 1, 0) as $(v_Table_List_Base).$(v_TName)_Flag';
         
         // Construct the aggregation fields
-        Let v_Agg_Table_Load_Statement = v_Agg_Table_Load_Statement & chr(13) & v_Table_Prefix & v_Table_List_Base & v_Table_PostFix & chr(13) & 'Load Distinct $(p_KeyField),1 as $(v_Table_List_Base).$(v_TName)_Flag Resident $(v_TName);';
-    Next;
+        Let v_Agg_Table_Load_Statement = v_Agg_Table_Load_Statement &
+            chr(13) &
+            v_Table_Prefix &
+            v_Table_List_Base &
+            v_Table_PostFix &
+            chr(13) &
+            'Load Distinct $(p_KeyField), 1 as $(v_Table_List_Base).$(v_TName)_Flag Resident $(v_TName);';
+    Next
     
-    // Part 3: Load the main table and DQ dimension table
+    // Load the main table and DQ dimension table
     Set NullValue = '0';
     NullAsValue $(v_Flag_Field_List);
     $(v_Table_List_Base): $(v_Table_Load_Statement);
@@ -120,37 +144,37 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField
     // Aggregation processing
     $(v_Table_List_Base)_TEMP:
     NoConcatenate
-    Load $(p_KeyField),$(v_Agg_Flag_Field_List) Resident $(v_Table_List_Base) group by $(p_KeyField);
+    Load $(p_KeyField), $(v_Agg_Flag_Field_List) Resident $(v_Table_List_Base) group by $(p_KeyField);
     
     Drop Table $(v_Table_List_Base);
     Rename Table $(v_Table_List_Base)_TEMP to $(v_Table_List_Base);
     Drop Table T_List;
     
     // Prepare the key field alias clause
-    If Len(p_KeyAliasField) > 0 Then
+    If Len(p_KeyAliasField) > 0
         Set v_Key = ,$(p_KeyField) as [$(p_KeyAliasField)];
     Else
         Set v_Key = ;
-    End If;
+    End If
     
     Unqualify *;
     
     // Get the columns that need to be filled with missing label
-    If Len(p_MissinglabelPrefix) = 0 Then
+    If Len(p_MissinglabelPrefix) = 0
         Let p_MissinglabelPrefix = QSC_Label_Missing_Prefix;
-    End If;
+    End If
     
-    If Len(p_NoKeyLabel) = 0 Then
+    If Len(p_NoKeyLabel) = 0
         Let p_NoKeyLabel = QSC_Label_For_No_Key;
-    End If;
+    End If
     
-    If p_CoreFields = '*' Then
+    If p_CoreFields = '*'
         Call QSC.Utility.GetTableFieldListToTable(p_MainTable, 'Tmp_MissingColumns', 'MissingColumn');
     Else
         Tmp_MissingColumns:
         Load Subfield('$(p_CoreFields)', ',') as MissingColumn
         AutoGenerate(1);
-    End If;
+    End If
     
     Inner Join (Tmp_MissingColumns)
     Load MissingColumn Resident Tmp_MissingColumns Where MissingColumn <> '$(p_KeyField)' and MissingColumn <> '[$(p_KeyAliasField)]';
@@ -159,32 +183,43 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField
     Set v_NoKeyColumnStatement = ;
     Let NumRows = NoOfRows('Tmp_MissingColumns');
     
-    For i = 0 to $(NumRows) - 1
+    For i = 0 To $(NumRows) - 1
         Let wMissingColumn = Peek('MissingColumn', $(i), 'Tmp_MissingColumns');
-        Let v_MissingColumnStatement = v_MissingColumnStatement & ' ''$(p_MissinglabelPrefix) for $(keyColumn) '' & $(p_KeyField) as [$(wMissingColumn)],';
-        Let v_NoKeyColumnStatement = v_NoKeyColumnStatement & ' ''$(p_NoKeyLabel)'' as [$(wMissingColumn)],';
-    Next;
+        Let v_MissingColumnStatement = v_MissingColumnStatement &
+            ' ''$(p_MissinglabelPrefix) for $(keyColumn) '' & $(p_KeyField) as [$(wMissingColumn)],';
+        Let v_NoKeyColumnStatement = v_NoKeyColumnStatement &
+            ' ''$(p_NoKeyLabel)'' as [$(wMissingColumn)],';
+    Next
     
     Let v_MissingColumnStatement = Left(v_MissingColumnStatement, Len(v_MissingColumnStatement) - 1);
     Let v_NoKeyColumnStatement = Left(v_NoKeyColumnStatement, Len(v_NoKeyColumnStatement) - 1);
     
     Drop Table Tmp_MissingColumns;
     
-    If Len(p_CoreFields) > 0 Then
+    If Len(p_CoreFields) > 0
         NullAsValue $(p_CoreFields);
     Else
         NullAsValue *;
-    End If;
+    End If
     
     // Deal with missing dimension values
     Set NullValue = 'No correspondent info';
     Concatenate($(p_MainTable))
-    Load $(p_KeyField) $(v_Key), $(v_MissingColumnStatement), '$(QSC_Label_Maked_Up)' as DQ_Record_Type Resident $(v_Table_List_Base) Where $(v_Table_List_Base).$(p_MainTable)_Flag = 0 and not IsNull($(p_KeyField)) and $(p_KeyField) <> '$(QSC_Label_For_NA)';
+    Load $(p_KeyField) $(v_Key), $(v_MissingColumnStatement),
+        '$(QSC_Label_Maked_Up)' as DQ_Record_Type
+    Resident $(v_Table_List_Base)
+    Where $(v_Table_List_Base).$(p_MainTable)_Flag = 0 and
+        not IsNull($(p_KeyField)) and
+        $(p_KeyField) <> '$(QSC_Label_For_NA)';
     
     // Handle scenario where key itself is NULL
     Set NullValue = 'No key info';
     Concatenate($(p_MainTable))
-    Load $(p_KeyField) $(v_Key), $(v_NoKeyColumnStatement), '$(p_NoKeyLabel)' as DQ_Record_Type Resident $(v_Table_List_Base) Where $(v_Table_List_Base).$(p_MainTable)_Flag = 0 and $(p_KeyField) = '$(QSC_Label_For_NA)';
+    Load $(p_KeyField) $(v_Key), $(v_NoKeyColumnStatement),
+        '$(p_NoKeyLabel)' as DQ_Record_Type
+    Resident $(v_Table_List_Base)
+    Where $(v_Table_List_Base).$(p_MainTable)_Flag = 0 and
+        $(p_KeyField) = '$(QSC_Label_For_NA)';
     
     Temp_Dimention:
     Load *, If(IsNull(DQ_Record_Type), '$(QSC_Label_Original)', DQ_Record_Type) as TempDQ_Record_Type
@@ -199,5 +234,5 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(p_MainTable, p_KeyField
     Qualify *;
     Unqualify '%*';
     Nullasnull *;
-    
 End Sub
+
