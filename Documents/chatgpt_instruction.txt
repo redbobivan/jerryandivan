@@ -1,0 +1,6 @@
+1. Please make the code more readable by adding proper comments;
+2. Please revise the code using google coding style except for the {} rule because Qlik that is conflicting with qlik syntax;
+3. For the main subroutine, please add the header comment section to explain the subroutine purpose, the parameter meaning and the example calls;
+   for the non-main soubroutine, optional for header comment section. (only apply if needed);
+4. If the main subroutine is too long, (like more than 100 lines), see if it can be sepreated out into seperate small souroutines so that it can be more readable;
+5. For the seperated out subroutine, please name it like the main subroutine name.xxxx so that we know it is associated to the main subroutine.
