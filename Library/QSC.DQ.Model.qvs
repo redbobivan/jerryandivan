@@ -46,28 +46,39 @@ End Sub
 
 
 /*
-The script is used to gather the information for the coverage between two tables
-
-@param 1: p_MainTable: the main dimension table we are maintaining
-@param 2: p_KeyField: the key fields between the dimension table and other fact tables
-@param 3: p_TableList: the comma delimited table list for the fact tables
-@param 4: p_CoreFields: the fields that we would like to put No Correspondent info to;
-@param 5: p_KeyAliasField: the local field whose role is also like key;
-@param 6: p_MissinglabelPrefix: the prefix for the missing label
-@param 7: p_NoKeyLabel: the label for the scenario where key is null
-
-Example:
-  Call QSC.DQ.Model.SupplementMasterTableAgainstDetailTable('Dimension','%key','Fact,Fact2,Fact3','Field1,Field2,Field3','KeyAliasName','Missing','NoKey');
-
-  Call QSC.DQ.Model.SupplementMasterTableAgainstDetailTable('Dimension','%key','Fact,Fact2,Fact3','*','KeyAliasName','Missing','NoKey');
-Consequence:
-  In the data model, there will be a new table created called DQ_Coverage_Dimension_Fact
-     it contains the following fields:
-        $(Table1)$(Table2)_Coverage,
-        $(p_KeyField),
-        $(Table1)_Flag,
-        $(Table2)_Flag
-*/
+ * Subroutine: SupplementMasterTableAgainstDetailTable
+ *
+ * Purpose:
+ *   This subroutine gathers information for the coverage between two tables.
+ *   It creates a new table containing coverage data for the specified main table
+ *   and a list of fact tables, including handling missing and null key scenarios.
+ *
+ * Parameters:
+ *   @param 1: p_MainTable - The main dimension table we are maintaining.
+ *   @param 2: p_KeyField - The key field between the dimension table and other fact tables.
+ *   @param 3: p_TableList - The comma-delimited table list for the fact tables.
+ *   @param 4: p_CoreFields - The fields that we would like to put No Correspondent info to.
+ *   @param 5: p_KeyAliasField - The local field whose role is also like a key.
+ *   @param 6: p_MissinglabelPrefix - The prefix for the missing label.
+ *   @param 7: p_NoKeyLabel - The label for the scenario where the key is null.
+ *
+ * Example Calls:
+ *   Call QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(
+ *     'Dimension', '%key', 'Fact,Fact2,Fact3', 'Field1,Field2,Field3',
+ *     'KeyAliasName', 'Missing', 'NoKey');
+ *
+ *   Call QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(
+ *     'Dimension', '%key', 'Fact,Fact2,Fact3', '*',
+ *     'KeyAliasName', 'Missing', 'NoKey');
+ *
+ * Consequence:
+ *   In the data model, a new table will be created called DQ_Coverage_Dimension_Fact
+ *   containing the following fields:
+ *     - $(Table1)$(Table2)_Coverage
+ *     - $(p_KeyField)
+ *     - $(Table1)_Flag
+ *     - $(Table2)_Flag
+ */
 
 Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(
     p_MainTable,
