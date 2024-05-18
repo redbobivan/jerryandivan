@@ -4,3 +4,4 @@
    for the non-main soubroutine, optional for header comment section. (only apply if needed);
 4. If the main subroutine is too long, (like more than 100 lines), see if it can be sepreated out into seperate small souroutines so that it can be more readable;
 5. For the seperated out subroutine, please name it like the main subroutine name.xxxx so that we know it is associated to the main subroutine.
+6. Please note he sub can be defined sub xxx(p1,p2) but if there is no sub, it can be just defined sub xxx instead of sub xxx()

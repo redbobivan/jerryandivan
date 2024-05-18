@@ -96,7 +96,7 @@ Sub QSC.DQ.Model.SupplementMasterTableAgainstDetailTable(
     Call SupplementMasterTableAgainstDetailTable.PrepareTableList(p_KeyField);
     
     // Step 3: Load Main and DQ Tables
-    Call SupplementMasterTableAgainstDetailTable.LoadMainAndDQTables();
+    Call SupplementMasterTableAgainstDetailTable.LoadMainAndDQTables;
     
     // Step 4: Aggregation processing
     Call SupplementMasterTableAgainstDetailTable.ProcessAggregation(p_KeyField);
@@ -156,7 +156,7 @@ Sub SupplementMasterTableAgainstDetailTable.PrepareTableList(p_KeyField)
     Next
 End Sub
 
-Sub SupplementMasterTableAgainstDetailTable.LoadMainAndDQTables()
+Sub SupplementMasterTableAgainstDetailTable.LoadMainAndDQTables
     Set NullValue = '0';
     NullAsValue $(v_Flag_Field_List);
     $(v_Table_List_Base): $(v_Table_Load_Statement);
